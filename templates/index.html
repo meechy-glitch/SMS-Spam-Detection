@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMS Spam Detector</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-6">
+
+    <div class="w-full max-w-xl">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4 shadow-lg">
+                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-4 4v-4z"/>
+                </svg>
+            </div>
+            <h1 class="text-3xl font-bold text-white tracking-tight">SMS Spam Detector</h1>
+            <p class="text-slate-400 mt-1 text-sm">Powered by DistilBERT</p>
+        </div>
+
+        <!-- Card -->
+        <div class="bg-white rounded-2xl shadow-2xl p-8">
+            <label for="smsInput" class="block text-sm font-semibold text-slate-700 mb-2">
+                Paste your SMS message
+            </label>
+            <textarea
+                id="smsInput"
+                rows="5"
+                placeholder="e.g. Congratulations! You've won a free prize. Call now to claim..."
+                class="w-full border border-slate-200 rounded-xl p-4 text-slate-800 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+            ></textarea>
+
+            <button
+                id="submitBtn"
+                onclick="predict()"
+                class="mt-4 w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-xl transition duration-200 flex items-center justify-center gap-2"
+            >
+                <span id="btnText">Analyze Message</span>
+                <svg id="spinner" class="hidden animate-spin w-4 h-4 text-white" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                </svg>
+            </button>
+
+            <!-- Result -->
+            <div id="result" class="hidden mt-6">
+                <div id="resultCard" class="rounded-xl p-6">
+                    <!-- Verdict -->
+                    <div class="flex items-center gap-3 mb-4">
+                        <span id="resultIcon" class="text-4xl"></span>
+                        <div>
+                            <div id="resultLabel" class="text-xl font-bold"></div>
+                            <div id="resultConfidence" class="text-sm font-medium mt-0.5"></div>
+                        </div>
+                    </div>
+
+                    <!-- Probability bars -->
+                    <div class="space-y-3">
+                        <div>
+                            <div class="flex justify-between text-xs font-semibold mb-1">
+                                <span class="text-green-700">Not Spam</span>
+                                <span id="hamPct" class="text-green-700"></span>
+                            </div>
+                            <div class="w-full bg-slate-100 rounded-full h-2.5">
+                                <div id="hamBar" class="bg-green-500 h-2.5 rounded-full transition-all duration-700 ease-out" style="width:0%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs font-semibold mb-1">
+                                <span class="text-red-600">Spam</span>
+                                <span id="spamPct" class="text-red-600"></span>
+                            </div>
+                            <div class="w-full bg-slate-100 rounded-full h-2.5">
+                                <div id="spamBar" class="bg-red-500 h-2.5 rounded-full transition-all duration-700 ease-out" style="width:0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <p class="text-center text-slate-500 text-xs mt-6">
+            Built by Ebosele Isimhemhe Mitchell &mdash; Machine Learning Engineer
+        </p>
+    </div>
+
+    <script>
+        async function predict() {
+            const input = document.getElementById('smsInput').value.trim();
+            if (!input) return;
+
+            const btn = document.getElementById('submitBtn');
+            const btnText = document.getElementById('btnText');
+            const spinner = document.getElementById('spinner');
+
+            btn.disabled = true;
+            btnText.textContent = 'Analyzing...';
+            spinner.classList.remove('hidden');
+
+            try {
+                const res = await fetch('/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ smsInput: input }),
+                });
+                const data = await res.json();
+
+                const isSpam = data.result === 'Spam';
+
+                const card = document.getElementById('resultCard');
+                card.className = `rounded-xl p-6 ${isSpam ? 'bg-red-50 border border-red-100' : 'bg-green-50 border border-green-100'}`;
+
+                document.getElementById('resultIcon').textContent = isSpam ? '🚨' : '✅';
+
+                const label = document.getElementById('resultLabel');
+                label.textContent = isSpam ? 'Spam Detected' : 'Looks Safe';
+                label.className = `text-xl font-bold ${isSpam ? 'text-red-700' : 'text-green-700'}`;
+
+                const conf = document.getElementById('resultConfidence');
+                conf.textContent = `${data.confidence}% confidence`;
+                conf.className = `text-sm font-medium mt-0.5 ${isSpam ? 'text-red-500' : 'text-green-600'}`;
+
+                document.getElementById('hamPct').textContent = `${data.ham_probability}%`;
+                document.getElementById('spamPct').textContent = `${data.spam_probability}%`;
+
+                // Animate bars after a short delay so CSS transition fires
+                setTimeout(() => {
+                    document.getElementById('hamBar').style.width = `${data.ham_probability}%`;
+                    document.getElementById('spamBar').style.width = `${data.spam_probability}%`;
+                }, 50);
+
+                document.getElementById('result').classList.remove('hidden');
+            } catch (err) {
+                console.error(err);
+            } finally {
+                btn.disabled = false;
+                btnText.textContent = 'Analyze Message';
+                spinner.classList.add('hidden');
+            }
+        }
+
+        document.getElementById('smsInput').addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) predict();
+        });
+    </script>
+</body>
+</html>

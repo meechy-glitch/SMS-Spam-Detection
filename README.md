@@ -1,6 +1,6 @@
 # SMS Spam Detection Web App
 
-A **Machine Learning–powered SMS Spam Detection web application** built with **Python, HuggingFace Transformers (DistilBERT), and Flask**.
+A **Machine Learning–powered SMS Spam Detection web application** built with **Python, HuggingFace Transformers (DistilBERT), and FastAPI**.
 It classifies SMS messages as **Spam** or **Not Spam** and returns a **confidence score** for each prediction.
 
 ---
@@ -31,7 +31,7 @@ SMS--spam-detection/
 │   └── index.html            # Tailwind CSS frontend
 │
 ├── train.py                  # Fine-tune DistilBERT and save the model
-├── main.py                   # Flask app — loads saved model and serves predictions
+├── main.py                   # FastAPI app — loads saved model and serves predictions
 ├── requirements.txt
 └── README.md
 ```
@@ -68,7 +68,7 @@ pip install -r requirements.txt
 ### 2. Train the model
 
 ```bash
-python train.py
+python ml/train.py
 ```
 
 This fine-tunes DistilBERT on `data/spam.csv`, prints evaluation metrics, and saves the model to `model/distilbert-spam/final/`.
@@ -76,10 +76,10 @@ This fine-tunes DistilBERT on `data/spam.csv`, prints evaluation metrics, and sa
 ### 3. Run the app
 
 ```bash
-python main.py
+uvicorn main:app --reload
 ```
 
-Open `http://127.0.0.1:5000` in your browser.
+Open `http://127.0.0.1:8000` in your browser. Interactive API docs are available at `http://127.0.0.1:8000/docs`.
 
 ---
 
@@ -105,7 +105,7 @@ Open `http://127.0.0.1:5000` in your browser.
 ## Tech Stack
 
 - **Model:** DistilBERT (`distilbert-base-uncased`) via HuggingFace Transformers
-- **Backend:** Flask, PyTorch
+- **Backend:** FastAPI, Uvicorn, PyTorch
 - **Frontend:** HTML, Tailwind CSS
 - **Data:** [SMS Spam Collection Dataset](https://www.kaggle.com/datasets/uciml/sms-spam-collection-dataset)
 
